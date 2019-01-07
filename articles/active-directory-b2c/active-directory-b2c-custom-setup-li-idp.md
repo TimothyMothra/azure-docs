@@ -1,198 +1,183 @@
-﻿---
-title: 'Azure Active Directory B2C: Add LinkedIn as a OAuth2 identity provider using custom policies'
-description: A How-To article on setting up LinkedIn application using OAuth2 protocol and custom policies
+---
+title: Set up sign-in with a LinkedIn account in Azure Active Directory B2C using custom policies | Microsoft Docs
+description: Set up sign-in with a Google account in Azure Active Directory B2C using custom policies.
 services: active-directory-b2c
-documentationcenter: ''
-author: yoelhor
-manager: joroja
-editor: 
+author: davidmu1
+manager: mtillman
 
-ms.assetid:
-ms.service: active-directory-b2c
+ms.service: active-directory
 ms.workload: identity
-ms.tgt_pltfrm: na
-ms.topic: article
-ms.devlang: na
-ms.date: 10/03/2017
-ms.author: yoelh
+ms.topic: conceptual
+ms.date: 09/20/2018
+ms.author: davidmu
+ms.component: B2C
 ---
 
-# Azure Active Directory B2C: Add LinkedIn as an identity provider using custom policies
+# Set up sign-in with a LinkedIn account using custom policies in Azure Active Directory B2C
+
 [!INCLUDE [active-directory-b2c-advanced-audience-warning](../../includes/active-directory-b2c-advanced-audience-warning.md)]
 
-This article shows you how to enable sign-in for users from LinkedIn account through the use of [custom policies](active-directory-b2c-overview-custom.md).
+This article shows you how to enable sign-in for users from a LinkedIn account by using [custom policies](active-directory-b2c-overview-custom.md) in Azure Active Directory (Azure AD) B2C.
 
 ## Prerequisites
-Complete the steps in the [Getting started with custom policies](active-directory-b2c-get-started-custom.md) article.
 
-These steps include:
-1.  Creating a LinkedIn account application.
-2.  Adding the LinkedIn account application key to Azure AD B2C
-3.  Adding claims provider to a policy
-4.  Registering the LinkedIn account claims provider to a user journey
-5.  Uploading the policy to an Azure AD B2C tenant and test the policy
+- Complete the steps in [Get started with custom policies in Azure Active Directory B2C](active-directory-b2c-get-started-custom.md).
+- If you don't already have a LinkedIn account, create one at the [LinkedIn sign-up page](https://www.linkedin.com/start/join).
+- A LinkedIn application requires you to provide an 80 X 80 pixel logo image to represent your application.
 
-## Step 1: Create a LinkedIn account application
-To use LinkedIn as an identity provider in Azure Active Directory (Azure AD) B2C, you need to create a LinkedIn application and supply it with the right parameters. You can register a LinkedIn application here: [https://LinkedIn.com/signup](https://LinkedIn.com/signup)
+## Create an application
 
-1.  Navigate to the [LinkedIn application management](https://www.linkedin.com/secure/developer?newapp=) website, sign in with your LinkedIn account credentials, and click **Create Application**.
+To use LinkedIn as an identity provider in Azure AD B2C, you need to create a LinkedIn application.
 
-    ![LinkedIn account - Create application](media/active-directory-b2c-custom-setup-li-idp/adb2c-ief-setup-li-idp-new-app1.png)
+1. Sign in to the [LinkedIn application management](https://www.linkedin.com/secure/developer?newapp=) website with your LinkedIn account credentials.
+2. Select **Create Application**.
+3. Enter your **Company Name**, an **Application Name**, and an **Application Description**.
+4. Upload the **Application Logo** that you created.
+5. Choose an **Application Use** from the provided list.
+6. For **Website URL**, enter `https://your-tenant.b2clogin.com`.  Replace `your-tenant` with the name of your Azure AD B2C tenant. For example, contoso.b2clogin.com.
+7. Enter your **Business Email** address and **Business Phone** number.
+8. At the bottom of the page, read and accept the terms of use, and then select **Submit**.
+9. Select **Authentication**, and then record the **Client ID** and **Client Secret** values to use later.
+10. In **Authorized Redirect URLs**, enter `https://your-tenant.b2clogin.com/your-tenant.onmicrosoft.com/oauth2/authresp`. Replace `your-tenant-name` with the name of your tenant. You need to use all lowercase letters when entering your tenant name even if the tenant is defined with uppercase letters in Azure AD B2C. 
+11. Select **Update**.
+12. Select **Settings**, change the **Application status** to **Live**, and then select **Update**.
 
-2.  1.  Type in your **Company Name**, provide descriptive **Name** and a **Description** for your new app.
-    2.  Upload **Application logo**
-    3.  Select **Application Use**
-    4.  Paste in `https://login.microsoftonline.com` for the **Website URL** value.
-    5.  Type in your **Business email** and **Business Phone**
-    6.  At the bottom the page, read and accept the terms of use. Then click **Submit**
+## Create a policy key
 
-    ![LinkedIn account - Configure application properties](media/active-directory-b2c-custom-setup-li-idp/adb2c-ief-setup-li-idp-new-app2.png)
+You need to store the client secret that you previously recorded in your Azure AD B2C tenant.
 
-3.  From the menu click on **Authentication**. Make a note of the values of **Client ID** and **Client Secret**.
+1. Sign in to the [Azure portal](https://portal.azure.com/).
+2. Make sure you're using the directory that contains your Azure AD B2C tenant by clicking the **Directory and subscription filter** in the top menu and choosing the directory that contains your tenant.
+3. Choose **All services** in the top-left corner of the Azure portal, and then search for and select **Azure AD B2C**.
+4. On the Overview page, select **Identity Experience Framework - PREVIEW**.
+5. Select **Policy Keys** and then select **Add**.
+6. For **Options**, choose `Manual`.
+7. Enter a **Name** for the policy key. For example, `LinkedInSecret`. The prefix `B2C_1A_` is added automatically to the name of your key.
+8. In **Secret**, enter your client secret that you previously recorded.
+9. For **Key usage**, select `Signature`.
+10. Click **Create**.
 
-    For the **Authorized redirect URLs**, paste the `https://login.microsoftonline.com/te/{tenant}.onmicrosoft.com/oauth2/authresp`. Replace {tenant} with your tenant's name (for example, contosob2c.onmicrosoft.com). and make sure that you are using the HTTPS scheme, and click **Add**
+## Add a claims provider
 
-    ![LinkedIn account - Set authorized redirect URLs](media/active-directory-b2c-custom-setup-li-idp/adb2c-ief-setup-li-idp-new-app3.png)
+If you want users to sign in using a LinkedIn account, you need to define the account as a claims provider that Azure AD B2C can communicate with through an endpoint. The endpoint provides a set of claims that are used by Azure AD B2C to verify that a specific user has authenticated. 
 
-    > [!NOTE]
-    >
-    >The Client Secret is an important security credential. Do not share this secret with anyone or distribute it with your app.
+You can define a LinkedIn account as a claims provider by adding it to the **ClaimsProviders** element in the extension file of your policy.
 
-4.  Click the **Settings** tab, change the **Application status** to **Live** then click **Update**.
-
-    ![LinkedIn account - Set application status](media/active-directory-b2c-custom-setup-li-idp/adb2c-ief-setup-li-idp-new-app4.png)
-
-## Step 2: Add your LinkedIn application key to Azure AD B2C
-Federation with LinkedIn accounts requires a client secret for LinkedIn account to trust Azure AD B2C on behalf of the application. You need to store the LinkdIn application secret in your Azure AD B2C tenant:  
-
-1.  Go to your Azure AD B2C tenant, and select **B2C Settings** > **Identity Experience Framework**
-2.  Select **Policy Keys** to view the keys available in your tenant.
-3.  Click **+Add**.
-4.  For **Options**, use **Manual**.
-5.  For **Name**, use `LinkedInSecret`.  
-    The prefix `B2C_1A_` might be added automatically.
-6.  In the **Secret** box, enter your LinkdIn application secret from https://apps.dev.microsoft.com
-7.  For **Key usage**, use **Encryption**.
-8.  Click **Create** 
-9.  Confirm that you've created the key `B2C_1A_LinkedInSecret`.
-
-## Step 3: Add a claims provider in your extension policy
-If you want users to sign in by using LinkedIn account, you need to define LinkedIn as a claims provider. In other words, you need to specify endpoints that Azure AD B2C communicates with. The endpoints provide a set of claims that are used by Azure AD B2C to verify that a specific user has authenticated.
-
-Define LinkedIn as a claims provider, by adding `<ClaimsProvider>` node in your extension policy file:
-
-1.  Open the extension policy file (TrustFrameworkExtensions.xml) from your working directory. 
-2.  Find the `<ClaimsProviders>` section
-3.  Add following XML snippet under the `<ClaimsProviders>` node:  
-
-  ```xml
-  <ClaimsProvider>
-    <Domain>linkedin.com</Domain>
-    <DisplayName>LinkedIn</DisplayName>
-    <TechnicalProfiles>
-      <TechnicalProfile Id="LinkedIn-OAUTH">
-        <DisplayName>LinkedIn</DisplayName>
-        <Protocol Name="OAuth2" />
-        <Metadata>
-          <Item Key="ProviderName">linkedin</Item>
-          <Item Key="authorization_endpoint">https://www.linkedin.com/oauth/v2/authorization</Item>
-          <Item Key="AccessTokenEndpoint">https://www.linkedin.com/oauth/v2/accessToken</Item>
-          <Item Key="ClaimsEndpoint">https://api.linkedin.com/v1/people/~:(id,first-name,last-name,email-address,headline)</Item>
-          <Item Key="ClaimsEndpointAccessTokenName">oauth2_access_token</Item>
-          <Item Key="ClaimsEndpointFormatName">format</Item>
-          <Item Key="ClaimsEndpointFormat">json</Item>
-          <Item Key="scope">r_emailaddress r_basicprofile</Item>
-          <Item Key="HttpBinding">POST</Item>
-          <Item Key="UsePolicyInRedirectUri">0</Item>
-          <Item Key="client_id">Your LinkedIn application client ID</Item>
-        </Metadata>
-        <CryptographicKeys>
-          <Key Id="client_secret" StorageReferenceId="B2C_1A_LinkedInSecret" />
-        </CryptographicKeys>
-        <OutputClaims>
-          <OutputClaim ClaimTypeReferenceId="socialIdpUserId" PartnerClaimType="id" />
-          <OutputClaim ClaimTypeReferenceId="givenName" PartnerClaimType="firstName" />
-          <OutputClaim ClaimTypeReferenceId="surname" PartnerClaimType="lastName" />
-          <OutputClaim ClaimTypeReferenceId="email" PartnerClaimType="emailAddress" />
-          <!--<OutputClaim ClaimTypeReferenceId="jobTitle" PartnerClaimType="headline" />-->
-          <OutputClaim ClaimTypeReferenceId="identityProvider" DefaultValue="linkedin.com" />
-          <OutputClaim ClaimTypeReferenceId="authenticationSource" DefaultValue="socialIdpAuthentication" />
-        </OutputClaims>
-        <OutputClaimsTransformations>
-          <OutputClaimsTransformation ReferenceId="CreateRandomUPNUserName" />
-          <OutputClaimsTransformation ReferenceId="CreateUserPrincipalName" />
-          <OutputClaimsTransformation ReferenceId="CreateAlternativeSecurityId" />
-          <OutputClaimsTransformation ReferenceId="CreateSubjectClaimFromAlternativeSecurityId" />
-        </OutputClaimsTransformations>
-        <UseTechnicalProfileForSessionManagement ReferenceId="SM-SocialLogin" />
-      </TechnicalProfile>
-    </TechnicalProfiles>
-  </ClaimsProvider>
-  ```
-
-4.  Replace `client_id` value with your LinkedIn application client ID
-5.  Save the file.
-
-## Step 4: Register the LinkedIn account claims provider to Sign up or Sign in user journey
-At this point, the identity provider has been set up. However, it is not available in any of the sign-up/sign-in screens. Now you need to add the LinkedIn account identity provider to your user `SignUpOrSignIn` user journey.
-
-### Step 4.1 Make a copy of the user journey
-To make it available, you create a duplicate of an existing template user journey. Then you add the LinkedIn identity provider:
-
-> [!NOTE]
->
->If you copied the `<UserJourneys>` element from base file of your policy to the extension file (TrustFrameworkExtensions.xml), you can skip this section.
-
-1.  Open the base file of your policy (for example, TrustFrameworkBase.xml).
-2.  Find the `<UserJourneys>` element and copy the entire content of `<UserJourneys>` node.
-3.  Open the extension file (for example, TrustFrameworkExtensions.xml) and find the `<UserJourneys>` element. If the element doesn't exist, add one.
-4.  Paste the entire content of `<UserJournesy>` node that you copied as a child of the `<UserJourneys>` element.
-
-### Step 4.2 Display the "button"
-The `<ClaimsProviderSelections>` element defines the list of claims provider selection options and their order.  `<ClaimsProviderSelection>` element is analogous to an identity provider button on a sign-up/sign-in page. If you add a `<ClaimsProviderSelection>` element for LinkedIn account, a new button shows up when a user lands on the page. To add this element:
-
-1.  Find the `<UserJourney>` node that includes `Id="SignUpOrSignIn"` in the user journey that you copied.
-2.  Locate the `<OrchestrationStep>` node that includes `Order="1"`
-3.  Add following XML snippet under `<ClaimsProviderSelections>` node:
-```xml
-<ClaimsProviderSelection TargetClaimsExchangeId="LinkedInExchange" />
-```
-
-### Step 4.3 Link the button to an action
-Now that you have a button in place, you need to link it to an action. The action, in this case, is for Azure AD B2C to communicate with LinkedIn account to receive a token. Link the button to an action by linking the technical profile for your LinkedIn account claims provider:
-
-1.  Find the `<OrchestrationStep>` that includes `Order="2"` in the `<UserJourney>` node.
-2.  Add following XML snippet under `<ClaimsExchanges>` node:
+1. Open the *TrustFrameworkExtensions.xml*.
+2. Find the **ClaimsProviders** element. If it does not exist, add it under the root element.
+3. Add a new **ClaimsProvider** as follows:
 
     ```xml
-    <ClaimsExchange Id="LinkedInExchange" TechnicalProfileReferenceId="LinkedIn-OAuth" />
+    <ClaimsProvider>
+      <Domain>linkedin.com</Domain>
+      <DisplayName>LinkedIn</DisplayName>
+      <TechnicalProfiles>
+        <TechnicalProfile Id="LinkedIn-OAUTH">
+          <DisplayName>LinkedIn</DisplayName>
+          <Protocol Name="OAuth2" />
+          <Metadata>
+            <Item Key="ProviderName">linkedin</Item>
+            <Item Key="authorization_endpoint">https://www.linkedin.com/oauth/v2/authorization</Item>
+            <Item Key="AccessTokenEndpoint">https://www.linkedin.com/oauth/v2/accessToken</Item>
+            <Item Key="ClaimsEndpoint">https://api.linkedin.com/v1/people/~:(id,first-name,last-name,email-address,headline)</Item>
+            <Item Key="ClaimsEndpointAccessTokenName">oauth2_access_token</Item>
+            <Item Key="ClaimsEndpointFormatName">format</Item>
+            <Item Key="ClaimsEndpointFormat">json</Item>
+            <Item Key="scope">r_emailaddress r_basicprofile</Item>
+            <Item Key="HttpBinding">POST</Item>
+            <Item Key="UsePolicyInRedirectUri">0</Item>
+            <Item Key="client_id">Your LinkedIn application client ID</Item>
+          </Metadata>
+          <CryptographicKeys>
+            <Key Id="client_secret" StorageReferenceId="B2C_1A_LinkedInSecret" />
+          </CryptographicKeys>
+          <OutputClaims>
+            <OutputClaim ClaimTypeReferenceId="socialIdpUserId" PartnerClaimType="id" />
+            <OutputClaim ClaimTypeReferenceId="givenName" PartnerClaimType="firstName" />
+            <OutputClaim ClaimTypeReferenceId="surname" PartnerClaimType="lastName" />
+            <OutputClaim ClaimTypeReferenceId="email" PartnerClaimType="emailAddress" />
+            <!--<OutputClaim ClaimTypeReferenceId="jobTitle" PartnerClaimType="headline" />-->
+            <OutputClaim ClaimTypeReferenceId="identityProvider" DefaultValue="linkedin.com" />
+            <OutputClaim ClaimTypeReferenceId="authenticationSource" DefaultValue="socialIdpAuthentication" />
+          </OutputClaims>
+          <OutputClaimsTransformations>
+            <OutputClaimsTransformation ReferenceId="CreateRandomUPNUserName" />
+            <OutputClaimsTransformation ReferenceId="CreateUserPrincipalName" />
+            <OutputClaimsTransformation ReferenceId="CreateAlternativeSecurityId" />
+            <OutputClaimsTransformation ReferenceId="CreateSubjectClaimFromAlternativeSecurityId" />
+          </OutputClaimsTransformations>
+          <UseTechnicalProfileForSessionManagement ReferenceId="SM-SocialLogin" />
+        </TechnicalProfile>
+      </TechnicalProfiles>
+    </ClaimsProvider>
     ```
 
-    > [!NOTE]
-    >
-    > * Ensure the `Id` has the same value as that of `TargetClaimsExchangeId` in the preceding section
-    > * Ensure `TechnicalProfileReferenceId` ID is set to the technical profile you created earlier (LinkedIn-OAuth).
+4. Replace the value of **client_id** with the client ID that you previously recorded.
+5. Save the file.
 
-## Step 5: Upload the policy to your tenant
-1.  In the [Azure portal](https://portal.azure.com), switch into the [context of your Azure AD B2C tenant](active-directory-b2c-navigate-to-b2c-context.md), and click on **Azure AD B2C**.
-2.  Select **Identity Experience Framework**.
-3.  Click on **All Policies**.
-4.  Select **Upload Policy**.
-5.  Check **Overwrite the policy if it exists** box.
-6.  **Upload** TrustFrameworkExtensions.xml and ensure that it does not fail the validation
+### Upload the extension file for verification
 
-## Step 6: Test the custom policy by using Run Now
-1.  Open **Azure AD B2C Settings** and go to **Identity Experience Framework**.
+By now, you have configured your policy so that Azure AD B2C knows how to communicate with your LinkedIn account. Try uploading the extension file of your policy just to confirm that it doesn't have any issues so far.
 
-    > [!NOTE]
-    >
-    >**Run now** requires at least one application to be preregistered on the tenant. To learn how to register applications, see the Azure AD B2C [Get started](active-directory-b2c-get-started.md) article or the [Application registration](active-directory-b2c-app-registration.md) article.
+1. On the **Custom Policies** page in your Azure AD B2C tenant, select **Upload Policy**.
+2. Enable **Overwrite the policy if it exists**, and then browse to and select the *TrustFrameworkExtensions.xml* file.
+3. Click **Upload**.
 
-2.  Open **B2C_1A_signup_signin**, the relying party (RP) custom policy that you uploaded. Select **Run now**.
-3.  You should be able to sign in using LinkedIn account.
+## Register the claims provider
 
-## Step 7: [Optional] Register the LinkedIn account claims provider to Profile-Edit user journey
-You may want to add the LinkedIn account identity provider also to your user `ProfileEdit` user journey. To make it available, you repeat the step #4. This time, select the `<UserJourney>` node that includes `Id="ProfileEdit"`. Save, upload, and test your policy.
+At this point, the identity provider has been set up, but it’s not available in any of the sign-up or sign-in screens. To make it available, you create a duplicate of an existing template user journey, and then modify it so that it also has the LinkedIn identity provider.
 
-## Download the complete policy files
-Optional: We recommend you build your scenario using your own Custom policy files after completing the Getting Started with Custom Policies walk through instead of using these sample files.  [Sample policy files for reference](https://github.com/Azure-Samples/active-directory-b2c-custom-policy-starterpack/tree/master/scenarios/aadb2c-ief-setup-li-app)
+1. Open the *TrustFrameworkBase.xml* file from the starter pack.
+2. Find and copy the entire contents of the **UserJourney** element that includes `Id="SignUpOrSignIn"`.
+3. Open the *TrustFrameworkExtensions.xml* and find the **UserJourneys** element. If the element doesn't exist, add one.
+4. Paste the entire content of the **UserJourney** element that you copied as a child of the **UserJourneys** element.
+5. Rename the ID of the user journey. For example, `SignUpSignInLinkedIn`.
+
+### Display the button
+
+The **ClaimsProviderSelection** element is analogous to an identity provider button on a sign-up or sign-in screen. If you add a **ClaimsProviderSelection** element for a LinkedIn account, a new button shows up when a user lands on the page.
+
+1. Find the **OrchestrationStep** element that includes `Order="1"` in the user journey that you created.
+2. Under **ClaimsProviderSelects**, add the following element. Set the value of **TargetClaimsExchangeId** to an appropriate value, for example `LinkedInExchange`:
+
+    ```XML
+    <ClaimsProviderSelection TargetClaimsExchangeId="LinkedInExchange" />
+    ```
+
+### Link the button to an action
+
+Now that you have a button in place, you need to link it to an action. The action, in this case, is for Azure AD B2C to communicate with a LinkedIn account to receive a token.
+
+1. Find the **OrchestrationStep** that includes `Order="2"` in the user journey.
+2. Add the following **ClaimsExchange** element making sure that you use the same value for **Id** that you used for **TargetClaimsExchangeId**:
+
+    ```XML
+    <ClaimsExchange Id="LinkedInExchange" TechnicalProfileReferenceId="LinkedIn-OAUTH" />
+    ```
+    
+    Update the value of **TechnicalProfileReferenceId** to the **Id** of the technical profile you created earlier. For example, `LinkedIn-OAUTH`.
+
+3. Save the *TrustFrameworkExtensions.xml* file and upload it again for verification.
+
+## Create an Azure AD B2C application
+
+Communication with Azure AD B2c occurs through an application that you create in your tenant. This section lists optional steps you can complete to create a test application if you haven't already done so.
+
+1. Sign in to the [Azure portal](https://portal.azure.com).
+2. Make sure you're using the directory that contains your Azure AD B2C tenant by clicking the **Directory and subscription filter** in the top menu and choosing the directory that contains your tenant.
+3. Choose **All services** in the top-left corner of the Azure portal, and then search for and select **Azure AD B2C**.
+4. Select **Applications**, and then select **Add**.
+5. Enter a name for the application, for example *testapp1*.
+6. For **Web App / Web API**, select `Yes`, and then enter `https://jwt.ms` for the **Reply URL**.
+7. Click **Create**.
+
+## Update and test the relying party file
+
+Update the relying party (RP) file that initiates the user journey that you created.
+
+1. Make a copy of *SignUpOrSignIn.xml* in your working directory, and rename it. For example, rename it to *SignUpSignInLinkedIn.xml*.
+2. Open the new file and update the value of the **PolicyId** attribute for **TrustFrameworkPolicy** with a unique value. For example, `SignUpSignInLinkedIn`.
+3. Update the value of **PublicPolicyUri** with the URI for the policy. For example,`http://contoso.com/B2C_1A_signup_signin_linkedin`
+4. Update the value of the **ReferenceId** attribute in **DefaultUserJourney** to match the ID of the new user journey that you created (SignUpSignLinkedIn).
+5. Save your changes, upload the file, and then select the new policy in the list.
+6. Make sure that Azure AD B2C application that you created is selected in the **Select application** field, and then test it by clicking **Run now**.

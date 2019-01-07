@@ -3,8 +3,8 @@ title: Create custom dashboards in Azure Application Insights | Microsoft Docs
 description: Tutorial to create custom KPI dashboards using Azure Application Insights.
 keywords:
 services: application-insights
-author: bwren
-ms.author: bwren
+author: mrbullwinkle
+ms.author: mbullwin
 ms.date: 09/20/2017
 ms.service: application-insights
 ms.custom: mvc
@@ -29,7 +29,7 @@ You can create multiple dashboards in the Azure portal that each include tiles v
 
 To complete this tutorial:
 
-- Deploy a .NET application to Azure and [enable the Application Insights SDK](app-insights-asp-net.md). 
+- Deploy a .NET application to Azure and [enable the Application Insights SDK](../azure-monitor/app/asp-net.md). 
 
 ## Log in to Azure
 Log in to the Azure portal at [https://portal.azure.com](https://portal.azure.com).
@@ -84,7 +84,7 @@ The **Metrics** panel allows you to graph a metric collected by Application Insi
 
 3. At the top of the screen, click **View dashboard** to return to your dashboard.
 
-4. The Overview Timeline is now added to your dashboard.  Click and drag it into position and then click **Done customizing** and then **Publish changes**. 
+4. The Timeline Metrics Chart is now added to your dashboard. Click and drag it into position and then click **Done customizing** and then **Publish changes**. 
 
 	![Dashboard with metrics](media/app-insights-tutorial-dashboards/dashboard-03.png)
 
